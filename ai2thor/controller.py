@@ -617,7 +617,7 @@ class Controller(object):
         if QUALITY_SETTINGS[self.quality] == 0:
             raise RuntimeError("Quality {} is associated with an index of 0. "
                                "Due to a bug in unity, this quality setting would be ignored.".format(self.quality))
-        command += " -screen-fullscreen %s -screen-quality %s -screen-width %s -screen-height %s" % (fullscreen, QUALITY_SETTINGS[self.quality], width, height)
+        command += " -force-opengl -screen-fullscreen %s -screen-quality %s -screen-width %s -screen-height %s" % (fullscreen, QUALITY_SETTINGS[self.quality], width, height)
         return shlex.split(command)
 
     def _start_unity_thread(self, env, width, height, host, port, image_name):
