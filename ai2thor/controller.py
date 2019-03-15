@@ -668,7 +668,7 @@ class Controller(object):
         return os.path.join(self.base_dir(), 'releases')
 
     def base_dir(self):
-        return os.path.join(os.path.expanduser('~'), '.ai2thor')
+        return os.path.join(os.path.expanduser('~'), '.visual_navigation')
 
     def build_url(self):
         from ai2thor.build import arch_platform_map

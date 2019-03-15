@@ -60,10 +60,14 @@ def nvidia_version():
                         break
     return version
 
+def nvidia_driver_version():
+    version = nvidia_version()
+
+    # Driver redirect
+    if version == '396.37': return '396.45'
 
 def generate_dockerfile(tag):
-
-    driver_url = 'http://us.download.nvidia.com/XFree86/Linux-x86_64/{version}/NVIDIA-Linux-x86_64-{version}.run'.format(version=nvidia_version())
+    driver_url = 'http://us.download.nvidia.com/XFree86/Linux-x86_64/{version}/NVIDIA-Linux-x86_64-{version}.run'.format(version=nvidia_driver_version())
     driver_filename = os.path.basename(driver_url)
 
     dockerfile = """
@@ -89,9 +93,9 @@ def run(image_name, base_dir, command, environment):
             environment_string += " -e %s=%s " % (k,v)
 
     relative_command = os.path.relpath(command, base_dir)
-    docker_command = os.path.join('/root/.ai2thor', relative_command)
+    docker_command = os.path.join('/root/.visual_navigation', relative_command)
     environment_string += " -e %s=%s -e %s='%s'" % ("AI2THOR_DEVICE_BUSID", xorg_bus_id(), "AI2THOR_COMMAND", docker_command)
-    command = "docker run -v {base_dir}:/root/.ai2thor -d --privileged {environment} {image_name} /root/start.sh".format(
+    command = "docker run -v {base_dir}:/root/.visual_navigation -d --privileged {environment} {image_name} /root/start.sh".format(
         environment=environment_string, image_name=image_name, base_dir=base_dir)
     container_id = subprocess.check_output(command, shell=True).decode('ascii').strip()
     return container_id
