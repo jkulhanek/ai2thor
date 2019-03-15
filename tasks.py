@@ -21,6 +21,21 @@ def add_files(zipf, start_dir):
             zipf.write(fn, arcname)
 
 def push_build(build_archive_name, archive_sha256):
+    archive_base = os.path.basename(build_archive_name)
+    key = 'builds/%s' % (archive_base,)
+
+    sha256_key = 'builds/%s.sha256' % (os.path.splitext(archive_base)[0],)
+    with open(sha256_key, 'w+') as f:
+        f.write(archive_sha256)
+        f.flush()
+
+    print('You have to push build manually')
+    print('Build: %s' % build_archive_name)
+    print('SHA file: %s' % sha256_key)
+    print('SHA:' + archive_sha256)
+    return
+
+
     import boto3
     #subprocess.run("ls %s" % build_archive_name, shell=True)
     #subprocess.run("gsha256sum %s" % build_archive_name)
@@ -56,12 +71,12 @@ def _build(unity_path, arch, build_dir, build_name, env={}):
     unity_hub_path = "/Applications/Unity/Hub/Editor/{}/Unity.app/Contents/MacOS/Unity".format(
         UNITY_VERSION
     )
-    standalone_path = "/Applications/Unity-{}/Unity.app/Contents/MacOS/Unity".format(UNITY_VERSION)
+    standalone_path = "D:\\Program Files\\Unity\\Editor\\Unity.exe"
     if os.path.exists(standalone_path):
         unity_path = standalone_path
     else:
         unity_path = unity_hub_path
-    command = "%s -quit -batchmode -logFile %s.log -projectpath %s -executeMethod Build.%s" % (unity_path, build_name, project_path, arch)
+    command = '"%s" -quit -batchmode -logFile %s.log -projectpath %s -executeMethod Build.%s' % (unity_path, build_name, project_path, arch)
     target_path = os.path.join(build_dir, build_name)
 
     full_env = os.environ.copy()
@@ -221,7 +236,7 @@ def local_build_name(prefix, arch):
 @task
 def local_build(context, prefix='local', arch='OSXIntel64'):
     build_name = local_build_name(prefix, arch)
-    if _build('unity', arch, "builds", build_name):
+    if _build('unity', arch, "builds", build_name + '/' + build_name):
         print("Build Successful")
     else:
         print("Build Failure")
@@ -423,7 +438,6 @@ def build_log_push(build_info):
 
 
 def archive_push(unity_path, build_path, build_dir, build_info):
-    threading.current_thread().success = False
     archive_name = os.path.join(unity_path, build_path)
     zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_STORED)
     add_files(zipf, os.path.join(unity_path, build_dir))
@@ -431,9 +445,8 @@ def archive_push(unity_path, build_path, build_dir, build_info):
 
     build_info['sha256'] = build_sha256(archive_name)
     push_build(archive_name, build_info['sha256'])
-    build_log_push(build_info)
+    #build_log_push(build_info)
     print("Build successful")
-    threading.current_thread().success = True
 
 @task
 def pre_test(context):
@@ -550,14 +563,10 @@ def build(context, local=False):
     from multiprocessing import Process
     from ai2thor.build import platform_map
 
-    version = datetime.datetime.now().strftime('%Y%m%d%H%M')
-    build_url_base = 'http://s3-us-west-2.amazonaws.com/%s/' % S3_BUCKET
+    version = datetime.datetime.now().strftime('%Y%m%d')
+    build_url_base = 'https://deep-rl.herokuapp.com/resources/'
 
-    builds = {'Docker': {'tag': version}}
-    threads = []
-    dp = Process(target=build_docker, args=(version,))
-    dp.start()
-
+    builds = dict()
     for arch in platform_map.keys():
         unity_path = 'unity'
         build_name = "thor-%s-%s" % (version, arch)
@@ -565,24 +574,13 @@ def build(context, local=False):
         build_path = build_dir + ".zip"
         build_info = builds[platform_map[arch]] = {}
 
-        build_info['url'] = build_url_base + build_path
+        build_info['url'] = build_url_base + build_name + '.zip'
         build_info['build_exception'] = ''
         build_info['log'] = "%s.log" % (build_name,)
 
-        _build(unity_path, arch, build_dir, build_name)
-        t = threading.Thread(target=archive_push, args=(unity_path, build_path, build_dir, build_info))
-        t.start()
-        threads.append(t)
+        #_build(unity_path, arch, build_dir, build_name)
+        archive_push(unity_path, build_path, build_dir, build_info)
 
-    dp.join()
-
-    if dp.exitcode != 0:
-        raise Exception("Exception with docker build")
-
-    for t in threads:
-        t.join()
-        if not t.success:
-            raise Exception("Error with thread")
 
     generate_quality_settings(context)
 

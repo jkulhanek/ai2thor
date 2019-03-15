@@ -1147,6 +1147,11 @@ namespace UnityStandardAssets.Characters.FirstPerson
         //XXX revisit what movement means when we more clearly define what "continuous" movement is
 		public override void MoveLeft(ServerAction action)
 		{
+            if(this.continuousMode) {
+                base.MoveLeft(action);
+                return;
+            }
+
             action.moveMagnitude = action.moveMagnitude > 0 ? action.moveMagnitude : gridSize;
             Vector3 targetPosition = transform.position + -1 * transform.right * action.moveMagnitude;
 			if(checkIfSceneBoundsContainTargetPosition(targetPosition) &&
@@ -1164,6 +1169,11 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 		public override void MoveRight(ServerAction action)
 		{
+            if(this.continuousMode) {
+                base.MoveRight(action);
+                return;
+            }
+
             action.moveMagnitude = action.moveMagnitude > 0 ? action.moveMagnitude : gridSize;
             Vector3 targetPosition = transform.position + transform.right * action.moveMagnitude;
 			if(checkIfSceneBoundsContainTargetPosition(targetPosition) &&
@@ -1181,6 +1191,11 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 		public override void MoveAhead(ServerAction action)
 		{
+            if(this.continuousMode) {
+                base.MoveAhead(action);
+                return;
+            }
+
             action.moveMagnitude = action.moveMagnitude > 0 ? action.moveMagnitude : gridSize;
             Vector3 targetPosition = transform.position + transform.forward * action.moveMagnitude;
             if (checkIfSceneBoundsContainTargetPosition(targetPosition) &&
@@ -1197,6 +1212,11 @@ namespace UnityStandardAssets.Characters.FirstPerson
         
 		public override void MoveBack(ServerAction action)
 		{
+            if(this.continuousMode) {
+                base.MoveBack(action);
+                return;
+            }
+
             action.moveMagnitude = action.moveMagnitude > 0 ? action.moveMagnitude : gridSize;
 			Vector3 targetPosition = transform.position + -1 * transform.forward * action.moveMagnitude;
             if (checkIfSceneBoundsContainTargetPosition(targetPosition) &&
